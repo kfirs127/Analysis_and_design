@@ -1,0 +1,877 @@
+Index: src/DAL/DalStock/DALProductType.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package DAL.DalStock;\r\n\r\nimport DAL.DALObject;\r\nimport DAL.DalController;\r\nimport DAL.Mapper;\r\nimport Utility.Tuple;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\nimport java.util.stream.Collectors;\r\n\r\npublic class DALProductType extends DALObject {\r\n    private int _typeID;\r\n    private int _categoryID;\r\n    private List<Integer> _products=new ArrayList<>();\r\n    private String _name;\r\n    private int _minAmount;\r\n    private int _shelfCurr=0;\r\n    private int _storageCurr=0;\r\n    private double _basePrice;\r\n    private double _salePrice;\r\n    private String _producer;\r\n    private int storeId;\r\n    private List<Integer> _suppliers=new ArrayList<>();\r\n    private List<Integer> _saleDiscounts=new ArrayList<>();\r\n    private List<Integer> _supplierDiscounts=new ArrayList<>();\r\n//    private String tableName=\"ProductType\";\r\n//    private String supTable=\"Supplier\";\r\n\r\n\r\n    public DALProductType(){\r\n        super(null);\r\n    }\r\n\r\n    public DALProductType(Integer storeID, Integer typeID, String name, Integer category, Integer min, Integer shelfCurr,\r\n                          Integer storageCurr, Double basePrice, Double salePrice, String producer, DalController dc){\r\n        super(dc);\r\n        this.storeId=storeID;\r\n        this._typeID=typeID;\r\n        this._name=name;\r\n        this._categoryID=category;\r\n        this._minAmount=min;\r\n        this._shelfCurr=shelfCurr;\r\n        this._storageCurr=storageCurr;\r\n        this._basePrice=basePrice;\r\n        this._salePrice=salePrice;\r\n        this._producer=producer;\r\n    }\r\n    // get products, suppliers and discounts from controller\r\n\r\n    @Override\r\n    public String getCreate() {\r\n        return \"CREATE TABLE IF NOT EXISTS ProductType (\\n\" +\r\n                \"\\tstoreID INTEGER NOT NULL UNIQUE,\\n\" +\r\n                \"\\ttypeID INTEGER NOT NULL UNIQUE,\\n\" +\r\n                \"\\tname VARCHAR NOT NULL,\\n\" +\r\n                \"\\tcategoryID INTEGER NOT NULL,\\n\" +\r\n                \"\\tminimum INTEGER NOT NULL,\\n\" +\r\n                \"\\tshelfCurr INTEGER NOT NULL,\\n\" +\r\n                \"\\tstorageCurr INTEGER NOT NULL,\\n\" +\r\n                \"\\tbasePrice DOUBLE NOT NULL,\\n\" +\r\n                \"\\tsalePrice DOUBLE NOT NULL,\\n\" +\r\n                \"\\tproducer VARCHAR NOT NULL,\\n\" +\r\n                \"\\tPRIMARY KEY (storeID, typeID),\\n\" +\r\n                \"\\tUNIQUE (storeID, typeID),\\n\" +\r\n                \"\\tFOREIGN KEY (storeID) REFERENCES StoreController(storeID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE\\n\" +\r\n                \"\\tFOREIGN KEY (storeID,categoryID) REFERENCES Category(storeID,categoryID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE\\n\" +\r\n                \");\\n\"+\r\n                \"CREATE TABLE IF NOT EXISTS Supplier (\\n\" +\r\n                \"\\tstoreID INTEGER NOT NULL UNIQUE,\\n\" +\r\n                \"\\ttypeID INTEGER NOT NULL UNIQUE,\\n\" +\r\n                \"\\tsupplierID INTEGER NOT NULL UNIQUE,\\n\" +\r\n                \"\\tPRIMARY KEY (storeID, typeID, supplierID),\\n\" +\r\n                \"\\tUNIQUE (storeID, supplierID),\\n\" +\r\n                \"\\tFOREIGN KEY (storeID) REFERENCES StoreController(storeID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE,\\n\" +\r\n                \"\\tFOREIGN KEY (storeID,typeID) REFERENCES ProductType(storeID,typeID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE\\n\" +\r\n                \");\";\r\n    }\r\n\r\n    @Override\r\n    public String getSelect() {\r\n        return \"\"\"\r\n                SELECT * \\s\r\n                FROM ProductType \\s\r\n                WHERE storeID=? AND typeID=? ;\\s\r\n                \"\"\";\r\n    }\r\n\r\n    @Override\r\n    public String getDelete() {\r\n        return \"\"\"\r\n                DELETE FROM ProductType \\s\r\n                WHERE storeID=? AND typeID=? ;\\s\r\n                \"\"\";\r\n\r\n    }\r\n\r\n    @Override\r\n    public String getUpdate() {\r\n        return null;\r\n    }\r\n\r\n    @Override\r\n    public String getInsert() {\r\n        return \"\"\"\r\n                INSERT OR REPLACE INTO ProductType \\s\r\n                VALUES(?,?,?,?,?,?,?,?,?,?);\"\"\";\r\n    }\r\n    public void setCategory(int i){\r\n        String query= \"\"\"\r\n                UPDATE ProductType \\s\r\n                Set categoryID=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;\"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(i,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _categoryID=i;\r\n\r\n\r\n    }\r\n    public void setSuppliers(List<Integer> sup){\r\n        StringBuilder query=new StringBuilder(\"\"\"\r\n                DELETE FROM Supplier \\s\r\n                WHERE storeID=? AND typeID=?;\r\n                \"\"\");\r\n        List<Tuple<Object,Class>> list=prepareList(storeId,_typeID);\r\n        for (Integer i:sup){\r\n            query.append(\"\"\"\r\n                    INSERT INTO Supplier \\s\r\n                    (storeID,typeID,SupplierID)\\s\r\n                    VALUES (?,?,?);\r\n                    \"\"\");\r\n            list.addAll(prepareList(storeId,_typeID,i));\r\n        }\r\n        try{\r\n            DC.noSelect(query.toString(), list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _suppliers=sup;\r\n    }\r\n    public int get_typeID(){return _typeID;}\r\n    public int get_categoryID(){return _categoryID;}\r\n\r\n    public List<Integer> get_products(){return _products;}\r\n    public void set_products(List<Integer> products){\r\n\r\n        for (Integer i: _products)\r\n        {\r\n            removeProduct(i);\r\n\r\n        }\r\n        for (Integer i:products){\r\n            addProduct(i);\r\n        }\r\n\r\n    }\r\n    public void insertSupplier(int storeID, int typeID, int supplierID){\r\n        String query= \"INSERT OR REPLACE INTO Supplier VALUES(?,?,?);\";\r\n        List<Tuple<Object,Class>> list=prepareList(storeID,typeID,supplierID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n    }\r\n    public String get_name(){return _name;}\r\n    public void set_name(String s){\r\n        String query= \"\"\"\r\n                UPDATE ProductType \\s\r\n                Set name=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;\"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(s,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _name=s;\r\n    }\r\n    public int get_minAmount(){return _minAmount;}\r\n    public void set_minAmount(int i){\r\n        String query= \"\"\"\r\n                UPDATE ProductType \\s\r\n                Set minimum=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;\"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(i,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _minAmount=i;\r\n    }\r\n    public int get_shelfCurr(){return _shelfCurr;}\r\n    public int get_storageCurr(){return _storageCurr;}\r\n    public double get_basePrice(){return _basePrice;}\r\n    public void set_basePrice(double i){\r\n        String query= \"\"\"\r\n                UPDATE ProductType \\s\r\n                Set basePrice=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;\"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(i,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _basePrice=i;\r\n    }\r\n    public String get_producer(){return _producer;}\r\n    public void set_producer(String s){\r\n        String query= \"\"\"\r\n                UPDATE ProductType \\s\r\n                Set producer=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;\"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(s,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _producer=s;\r\n    }\r\n    public List<Integer> get_suppliers(){\r\n        return _suppliers;\r\n    }\r\n\r\n    public void addSaleProductDiscount(int i){\r\n        List<Integer> key=new ArrayList<>();\r\n        key.add(storeId);\r\n        key.add(i);\r\n        DALSaleDiscount p=(DALSaleDiscount) Mapper.getMap().getItem(DALSaleDiscount.class,key);\r\n        p.setTypeID(_typeID);\r\n        _saleDiscounts.add(i);\r\n    }\r\n    public void removeSaleDiscount(int i){\r\n        List<Integer> key=new ArrayList<>();\r\n        key.add(storeId);\r\n        key.add(i);\r\n        DALDiscount p=(DALDiscount) Mapper.getMap().getItem(DALDiscount.class,key);\r\n        p.removeTypeID(_typeID);\r\n        _saleDiscounts.remove(i);\r\n    }\r\n    public void addSupplier(int i){\r\n        StringBuilder query=new StringBuilder(\"\"\"\r\n                INSERT INTO Supplier \\s\r\n                (storeID,typeID,SupplierID)\\s\r\n                VALUES (?,?,?);\"\"\");\r\n        List<Tuple<Object,Class>> list=prepareList(storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query.toString(), list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _suppliers.add(i);\r\n    }\r\n    public boolean productsContaions(int i){\r\n        return _products.contains(i);\r\n    }\r\n    public void removeProduct(int i){\r\n        List<Integer> key=new ArrayList<>();\r\n        key.add(storeId);\r\n        key.add(i);\r\n        DALProduct p=(DALProduct) Mapper.getMap().getItem(DALProduct.class,key);\r\n        p.removeProduct();\r\n        _products.remove(i);\r\n    }\r\n    public void set_shelfCurr(int i){\r\n        String query= \"\"\"\r\n                UPDATE Supplier \\s\r\n                Set shelfCurr=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;;\r\n                \"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(i,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _shelfCurr=i;\r\n    }\r\n    public void set_storageCurr(int i){\r\n        String query= \"\"\"\r\n                UPDATE Supplier \\s\r\n                Set storageCurr=? \\s\r\n                WHERE \\s\r\n                storeID=? AND typeID=?;;\r\n                \"\"\";\r\n        List<Tuple<Object,Class>> list=prepareList(i,storeId,_typeID);\r\n        try{\r\n            DC.noSelect(query, list);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _storageCurr=i;\r\n    }\r\n    public void addProduct(int i){\r\n        List<Integer> key=new ArrayList<>();\r\n        key.add(storeId);\r\n        key.add(i);\r\n        DALProduct p=(DALProduct) Mapper.getMap().getItem(DALProduct.class,key);\r\n        p.addProduct(_typeID);\r\n        _products.add(i);\r\n    }\r\n    private List<Tuple<Object,Class>> prepareList(Object... o){\r\n        List<Tuple<Object,Class>> params=new ArrayList<>();\r\n        for (Object o1:o){\r\n            params.add(new Tuple<>(o1,o1.getClass()));\r\n        }\r\n        return params;\r\n    }\r\n    public List<Integer> getSaleDiscounts(){\r\n        String query= \"\"\"\r\n                SELECT discountID \\s\r\n                FROM Discount \\s\r\n                WHERE storeID=? AND typeID=? AND supplierID=?;\"\"\";\r\n        List<Integer> list=new ArrayList<>();\r\n        list.add(storeId);\r\n        list.add(_typeID);\r\n        list.add(-1);\r\n        try{\r\n            List<Tuple<List<Class>,List<Object>>> lst=DC.SelectMany(query,list);\r\n            return DC.SelectMany(query,list).stream().map(x->(Integer)(x.item2.get(0))).collect(Collectors.toList());\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(e);\r\n        }\r\n    }\r\n    public int getStoreId(){\r\n        return storeId;\r\n    }\r\n    public  List<Integer> getSupplierDiscounts(){\r\n        String query= \"\"\"\r\n                SELECT discountID \\s\r\n                FROM Discount \\s\r\n                WHERE storeID=? AND typeID=?;\\s \r\n                \"\"\";\r\n        List<Integer> list=new ArrayList<>();\r\n        list.add(storeId);\r\n        list.add(_typeID);\r\n        try{\r\n            List<Tuple<List<Class>,List<Object>>> lst=DC.SelectMany(query,list);\r\n            return DC.SelectMany(query,list).stream().map(x->(Integer)(x.item2.get(0))).collect(Collectors.toList());\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/DAL/DalStock/DALProductType.java	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ src/DAL/DalStock/DALProductType.java	(date 1620643187961)
+@@ -263,15 +263,15 @@
+     }
+     public void addSupplier(int i){
+         StringBuilder query=new StringBuilder("""
+-                INSERT INTO Supplier \s
++                INSERT OR REPLACE INTO Supplier\s
+                 (storeID,typeID,SupplierID)\s
+                 VALUES (?,?,?);""");
+-        List<Tuple<Object,Class>> list=prepareList(storeId,_typeID);
++        List<Tuple<Object,Class>> list=prepareList(storeId,_typeID,i);
+         try{
+             DC.noSelect(query.toString(), list);
+         }
+         catch (Exception e){
+-            throw new IllegalArgumentException("fail");
++            throw new IllegalArgumentException("fail:" + e.getMessage());
+         }
+         _suppliers.add(i);
+     }
+Index: logger.log
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- logger.log	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ logger.log	(date 1620643091968)
+@@ -33955,3 +33955,701 @@
+ [WARN ] 10-05-2021 01:20:07 [class: DAL.DalController,Line:117] - ResultSet closed
+ [WARN ] 10-05-2021 01:20:07 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
+ [WARN ] 10-05-2021 01:20:07 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:22:42 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:22:42 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALStoreController
++[WARN ] 10-05-2021 12:22:42 [class: BusinessLayer.StockBusiness.StoreController,Line:88] - storeID is not in DB
++[WARN ] 10-05-2021 12:22:42 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:421] - java.lang.IllegalArgumentException: storeID is not in DB
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1000, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=501, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2000, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.StoreController,Line:659] - the number #3, is not ID of any ProductType in Store #1
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALSaleDiscount
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.StoreController,Line:216] - can not remove Discount to DB
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALSaleDiscount
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.StoreController,Line:216] - can not remove Discount to DB
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:24:20 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:24:20 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalSuppliers.DalSupplierController
++[WARN ] 10-05-2021 12:24:20 [class: BusinessLayer.SupplierBusiness.SupplierController,Line:50] - the instance that return from Mapper is null
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1000, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=501, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2000, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.StoreController,Line:659] - the number #3, is not ID of any ProductType in Store #1
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALSaleDiscount
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.StoreController,Line:216] - can not remove Discount to DB
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:25:21 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:25:21 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALSaleDiscount
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.StoreController,Line:216] - can not remove Discount to DB
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:25:21 [class: BusinessLayer.StockBusiness.Type.Discount,Line:16] - the Date is illegal
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1000, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=6, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:35:51 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2000, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}, Tuple{item1=Thu Jan 01 02:00:02 IST 1970, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:35:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:35:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:35:51 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1000, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Thu Nov 02 00:00:00 IST 3922, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=6, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Product  
++VALUES(?,?,?,?,?,?,?)
++ params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2000, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}, Tuple{item1=Wed Nov 02 00:00:00 IST 3921, item2=class java.util.Date}, Tuple{item1=false, item2=class java.lang.Boolean}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=Shelves, item2=class java.lang.String}]
++failed due to illegal type
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:160] - java.lang.Exception: illegal type
++[WARN ] 10-05-2021 12:38:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:38:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:38:13 [class: Utility.Util,Line:32] - the instance that return from Mapper is null for: class DAL.DalStock.DALProduct
++[WARN ] 10-05-2021 12:39:17 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:39:17 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:39:17 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:39:17 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:39:17 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:39:17 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:39:17 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:39:17 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:39:17 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:39:17 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:43:31 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:43:31 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:43:31 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:43:31 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:43:31 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:43:31 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:43:31 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:43:31 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:43:31 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:43:31 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:43:31 [class: BusinessLayer.StockBusiness.StoreController,Line:675] - the name: kfir , is exist in the system 
++[WARN ] 10-05-2021 12:44:03 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:44:03 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:44:03 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:44:03 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:44:03 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:44:03 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:44:03 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:44:03 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:44:03 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:44:03 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:44:03 [class: BusinessLayer.StockBusiness.StoreController,Line:314] - can not remove the Category in DB
++[WARN ] 10-05-2021 12:49:39 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:49:39 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:49:40 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:49:40 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:49:40 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:49:40 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:49:40 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:49:40 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:49:40 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:49:40 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:49:40 [class: BusinessLayer.StockBusiness.StoreController,Line:314] - can not remove the Category in DB
++[WARN ] 10-05-2021 12:49:40 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:49:40 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:51:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:51:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:51:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:51:14 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:14 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:51:14 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:14 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:51:14 [class: BusinessLayer.StockBusiness.StoreController,Line:314] - can not remove the Category in DB
++[WARN ] 10-05-2021 12:51:14 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:51:14 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:51:51 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:51:51 [class: BusinessLayer.StockBusiness.StoreController,Line:314] - can not remove the Category in DB
++[WARN ] 10-05-2021 12:51:51 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:51:51 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:53:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:53:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:53:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:53:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:53:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:53:01 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 12:53:01 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:53:01 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:58:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:58:01 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:01 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:58:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:58:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:58:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:58:02 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 12:58:02 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:58:02 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:58:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:58:35 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 12:58:35 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:58:35 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 12:59:08 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:59:08 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 12:59:08 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:59:08 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:59:08 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:59:08 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:59:08 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:59:08 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 12:59:09 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 12:59:09 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 12:59:09 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 12:59:09 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 12:59:09 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 13:01:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:01:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:01:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:01:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:01:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:01:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:01:23 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:01:23 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:01:23 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:01:23 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:01:23 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:01:23 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:01:23 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:03:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:03:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:03:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:03:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:03:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:03:28 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:03:28 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:03:28 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:04:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:04:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:04:50 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:04:50 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:04:50 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:04:50 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:04:50 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:04:50 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:04:50 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:04:50 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:04:50 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:04:50 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:04:50 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:15:26 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:15:26 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:15:26 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:15:26 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:15:26 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:15:26 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:15:26 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:15:26 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:18:29 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:18:29 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:18:29 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:18:29 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:18:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:18:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:18:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:18:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:18:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:18:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:18:30 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:18:30 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:18:30 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:20:22 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:20:22 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:20:22 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_NOTNULL]  A NOT NULL constraint failed (NOT NULL constraint failed: Supplier.supplierID)
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:20:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:20:54 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:20:54 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=4, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:20:54 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:21:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:21:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:21:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:21:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:21:54 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:21:54 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:21:54 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=4, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:21:54 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:22:09 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:09 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:22:09 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:09 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:22:09 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:09 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:22:10 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:10 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:22:10 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:10 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:22:10 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:22:10 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:22:10 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:22:49 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:22:49 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:22:49 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:22:49 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID)
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:23:04 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:23:04 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:23:04 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:23:04 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:23:04 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:23:04 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:23:04 [class: DAL.DalController,Line:70] - noSelect quary: INSERT INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID, Supplier.supplierID)
++[WARN ] 10-05-2021 13:23:04 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_UNIQUE]  A UNIQUE constraint failed (UNIQUE constraint failed: Supplier.storeID, Supplier.supplierID)
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:18 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:18 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:18 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:18 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:18 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:24:18 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:24:18 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:24:18 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:24:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:24:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:24:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:24:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:24:30 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:24:30 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:24:31 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:24:31 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:24:31 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:26:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:26:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:26:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:26:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:26:22 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:26:22 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:26:22 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:26:22 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:27:45 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:27:45 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:27:45 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:27:45 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:27:45 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:27:45 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:27:45 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=2, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:27:45 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:28:02 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:28:02 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier  
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:28:02 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:28:34 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:34 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:28:34 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:34 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:28:34 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:34 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:28:34 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:34 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:28:35 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:28:35 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:28:35 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:28:35 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:28:35 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:29:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:29:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:29:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:29:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:29:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:29:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:29:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:29:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:29:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:29:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:30:00 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:30:00 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:30:00 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:31:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:31:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:31:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:31:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:31:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:31:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:31:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:31:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:31:59 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:31:59 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:31:59 [class: BusinessLayer.StockBusiness.StoreController,Line:254] - can not edit discount of this Category in DB
++[WARN ] 10-05-2021 13:32:00 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:32:00 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:34:38 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:34:38 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:34:38 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:34:38 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:34:38 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:34:38 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:34:38 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:35:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:35:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:35:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:35:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:35:13 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:35:13 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:35:13 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:36:06 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:06 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:36:06 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:06 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:36:06 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:06 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:36:06 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:06 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:36:07 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:07 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:36:07 [class: BusinessLayer.StockBusiness.StoreController,Line:675] - the name: dairy , is exist in the system 
++[WARN ] 10-05-2021 13:36:07 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:36:07 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:36:47 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:47 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:36:48 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:48 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:36:48 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:48 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:36:48 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:48 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:36:48 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:36:48 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:36:48 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:36:48 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:02 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:37:02 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:37:02 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:37:28 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
++[WARN ] 10-05-2021 13:37:28 [class: DAL.DalController,Line:70] - noSelect quary: INSERT OR REPLACE INTO Supplier 
++(storeID,typeID,SupplierID) 
++VALUES (?,?,?) params: [Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}, Tuple{item1=1, item2=class java.lang.Integer}]
++failed due to [SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:37:28 [class: BusinessLayer.StockBusiness.Fcade.StorageService,Line:191] - java.lang.IllegalArgumentException: fail:[SQLITE_CONSTRAINT_FOREIGNKEY]  A foreign key constraint failed (FOREIGN KEY constraint failed)
++[WARN ] 10-05-2021 13:38:11 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:38:11 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALCategory
++[WARN ] 10-05-2021 13:38:11 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:38:11 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALProductType
++[WARN ] 10-05-2021 13:38:11 [class: DAL.DalController,Line:117] - ResultSet closed
++[WARN ] 10-05-2021 13:38:11 [class: DAL.Mapper,Line:122] - mapper returned null on:class DAL.DalStock.DALInstanceController
+Index: src/BusinessLayer/StockBusiness/StoreController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package BusinessLayer.StockBusiness;\r\n\r\nimport BusinessLayer.StockBusiness.Type.Category;\r\nimport BusinessLayer.StockBusiness.Type.ProductType;\r\nimport BusinessLayer.StockBusiness.Type.SaleDiscount;\r\nimport BusinessLayer.StockBusiness.Type.SupplierDiscount;\r\nimport BusinessLayer.StockBusiness.instance.InstanceController;\r\nimport BusinessLayer.StockBusiness.instance.Location;\r\nimport BusinessLayer.StockBusiness.instance.Product;\r\nimport BusinessLayer.StockBusiness.instance.Shelf;\r\nimport DAL.DALObject;\r\nimport DAL.DalStock.DALStoreController;\r\nimport DAL.Mapper;\r\nimport Utility.Tuple;\r\nimport Utility.Util;\r\nimport org.apache.log4j.Logger;\r\nimport reports.NeededReport;\r\nimport reports.Report;\r\nimport reports.WasteReport;\r\nimport reports.WeeklyReport;\r\n\r\nimport java.util.*;\r\nimport java.util.stream.Collectors;\r\n\r\npublic class StoreController implements iStoreController {\r\n    DALStoreController dal;\r\n\r\n    static public int MAX_PRODUCTS_ON_PROTUCTTYPE=1000;\r\n    private List<Shelf> _shelves=new ArrayList<>();\r\n    private Dictionary<ProductType,InstanceController> _products=new Hashtable<>();\r\n    private Dictionary<Integer,Category> _category=new Hashtable<>();\r\n    private Dictionary<Integer,SaleDiscount> saleCategoryDiscount=new Hashtable<>();\r\n    final static Logger log=Logger.getLogger(StoreController.class);\r\n\r\n\r\n\r\n    public StoreController(int storeID,int shelves,int storeSelves,int maxProductsInShelf){\r\n        String error;\r\n        //dal=Util.initDal(DALStoreController.class,storeID,storeSelves,shelves,0,0,0,maxProductsInShelf);\r\n        List<Tuple<Object,Class>> list=new ArrayList<>();\r\n        list.add(new Tuple<>(storeID,Integer.class));\r\n        list.add(new Tuple<>(storeSelves,Integer.class));\r\n        list.add(new Tuple<>(shelves,Integer.class));\r\n        list.add(new Tuple<>(0,Integer.class));\r\n        list.add(new Tuple<>(0,Integer.class));\r\n        list.add(new Tuple<>(counterCategory(),Integer.class));\r\n        Mapper map=Mapper.getMap();\r\n        map.setItem(DALStoreController.class,list);\r\n        List<Integer> keyList=new ArrayList<>();\r\n        keyList.add(storeID);\r\n        DALObject check =map.getItem(DALStoreController.class ,keyList);\r\n        if (check==null ||(check.getClass()!=DALStoreController.class)){\r\n            String s=\"the instance that return from Mapper is null\";\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n\r\n        }\r\n        else{\r\n            log.info(\"create new Object\");\r\n        }\r\n        dal=(DALStoreController) check;\r\n        ////////////////////////////////\r\n        if (storeSelves>shelves) {\r\n            error=\"the number of store shelves greater then the number of all shelves.\";\r\n            log.warn(error);\r\n            throw new IllegalArgumentException(error);\r\n        }\r\n        for (int i=1;i<=storeSelves; i++)\r\n            _shelves.add(new Shelf(storeID,i,0,maxProductsInShelf));\r\n        for (int i=storeSelves+1;i<=shelves; i++)\r\n            _shelves.add(new Shelf(storeID,i,1,maxProductsInShelf));\r\n    }\r\n    public StoreController(){//for testing\r\n//        _storeID=1;\r\n//        _numberOfShelves=10;\r\n//        _storeShelves=5;\r\n//        for (int i=1;i<=_storeShelves; i++)\r\n//            _shelves.add(new Shelf(i,Location.Storage,1000));\r\n//        for (int i=_storeShelves+1;i<=_numberOfShelves; i++)\r\n//            _shelves.add(new Shelf(i,Location.Storage,1000));\r\n    }\r\n    public StoreController(int storeID){\r\n        List<Integer> list=new ArrayList<>();\r\n        list.add(storeID);\r\n        dal=(DALStoreController)Mapper.getMap().getItem(DALStoreController.class,list);\r\n        if (dal==null)\r\n        {\r\n            log.warn(\"storeID is not in DB\");\r\n            throw new IllegalArgumentException(\"storeID is not in DB\");\r\n        }\r\n        log.warn(\"loading discounts\");\r\n        loadSaleCategoryDiscount();\r\n        log.warn(\"loading categories\");\r\n        loadCategories();\r\n        log.warn(\"loading products\");\r\n        loadTypeProducts();\r\n        log.warn(\"loading shelves\");\r\n        loadShelves();\r\n\r\n\r\n\r\n    }\r\n    public void loadCategories(){\r\n        List<Integer> list=dal.getCategories();\r\n        List<Category> categories=new ArrayList<>();\r\n        Category c;\r\n        for (Integer i: list) {\r\n            c=new Category(getID(), i);\r\n            categories.add(c);\r\n            _category.put(i,c);\r\n        }\r\n        for (Category cat: categories)\r\n            cat.initCategory(categories);\r\n    }\r\n    public void loadSaleCategoryDiscount(){\r\n        List<Integer> list=dal.getSaleCategoryDiscount();\r\n        for (Integer i:list)\r\n            saleCategoryDiscount.put(i,new SaleDiscount(getID(),i));\r\n    }\r\n    public void loadTypeProducts(){\r\n        List<Integer> list=dal.getTypes();\r\n        log.warn(list);\r\n        for (Integer i: list){\r\n            _products.put(new ProductType(getID(),i),new InstanceController(getID(),i));\r\n        }\r\n        for (ProductType p: Collections.list(_products.keys()))\r\n        {\r\n            Category c=_category.get(p.get_categoryID());\r\n            List<Integer> discounts=new ArrayList<>();\r\n            List<SaleDiscount> obj=new ArrayList<>();\r\n            c.addAllDiscountCategory(discounts);\r\n            for (SaleDiscount s: Collections.list(saleCategoryDiscount.elements()))\r\n                if(discounts.contains(s.get_discountID()))\r\n                    obj.add(s);\r\n            p.initSaleDiscount(obj);\r\n        }\r\n    }\r\n    public void loadShelves(){\r\n        List<Integer> list=dal.getListShelves();\r\n        for (Integer i: list){\r\n            _shelves.add(new Shelf(getID(),i));\r\n        }\r\n    }\r\n\r\n    public static int getMaxProdOnType() {\r\n        return MAX_PRODUCTS_ON_PROTUCTTYPE;\r\n    }\r\n\r\n    @Override\r\n    public int getID() {\r\n        log.debug(\"got inside getID Method\");\r\n        return dal.getStoreID();\r\n    }\r\n\r\n    @Override\r\n    public Report getWeeklyReport() {\r\n        log.debug(\"got inside getWeeklyReport() Method.\");\r\n        Dictionary<Integer,Dictionary<Integer, Tuple<Integer,Boolean>>> output=new Hashtable<>();\r\n        List<ProductType> pt=Collections.list(_products.keys());\r\n        for (ProductType p: pt){\r\n            output.put(p.get_typeID(), _products.get(p).getWeeklyReport());\r\n\r\n        }\r\n        return new WeeklyReport(getID(),output);\r\n    }\r\n\r\n    @Override\r\n    public Report getWeeklyReport(List<Integer> c) {\r\n        log.debug(\"got inside getWeeklyReport(int... c) Method.\");\r\n        Dictionary<Integer,Dictionary<Integer,Tuple<Integer,Boolean>>> output=new Hashtable<>();\r\n        for (int i=0; i<c.size(); i++ )\r\n        {\r\n            checkValidCategory(c.get(i));\r\n            weeklyCatRec(c.get(i),output);\r\n        }\r\n        return new WeeklyReport(getID(),output);\r\n    }\r\n    private void weeklyCatRec(int cid, Dictionary<Integer,Dictionary<Integer,Tuple<Integer,Boolean>>> out){\r\n        for(int j:_category.get(cid).get_productTypes()) {\r\n            ProductType p = checkIDProductTypeExist(j);\r\n            out.put(p.get_typeID(), _products.get(p).getWeeklyReport());\r\n        }\r\n        for(Category cat: _category.get(cid).get_categories()){\r\n            weeklyCatRec(cat.get_categoryID(),out);\r\n        }\r\n    }\r\n\r\n\r\n    @Override\r\n    public Report getNeededReport() {\r\n        log.debug(\"got inside getNeededReport() Method.\");\r\n        Dictionary<Integer,Integer> output=new Hashtable<>();\r\n        for (Enumeration<ProductType> pt=_products.keys(); pt.hasMoreElements();)\r\n        {\r\n            ProductType p=pt.nextElement();\r\n            if (p.getNeededReport()>0)\r\n                output.put(p.get_typeID(),p.getNeededReport());\r\n        }\r\n        return new NeededReport(getID(),output);\r\n    }\r\n\r\n    @Override\r\n    public Report getWasteReport() {\r\n        log.debug(\"got inside getWasteReport() Method.\");\r\n        List<Integer> list=new ArrayList<>();\r\n        List<InstanceController> ic= Collections.list(_products.elements());\r\n        for (int i = 0; i < ic.size(); i++) {\r\n            ic.get(i).getWasteReport(list);\r\n        }\r\n        return new WasteReport(getID(),list);\r\n    }\r\n\r\n    @Override\r\n    public void setList(Dictionary<ProductType, InstanceController> dictionary) {\r\n        log.debug(\"setList(Dictionary<ProductType, InstanceController> dictionary)\");\r\n        _products=dictionary;\r\n    }\r\n\r\n    @Override\r\n    public int counterCategory() {\r\n        log.debug(\"got inside counterCategory Method\");\r\n        return _category.size();\r\n    }\r\n\r\n    @Override\r\n    public boolean containCategory(Category c) {\r\n        return Collections.list(_category.elements()).contains(c);\r\n    }\r\n\r\n    @Override\r\n    public boolean containProductType(String c) {\r\n        for (Enumeration<ProductType> pt=_products.keys();pt.hasMoreElements();)\r\n            if (pt.nextElement().get_name().equals(c))\r\n            {\r\n                return true;\r\n            }\r\n        return false;\r\n    }\r\n\r\n    @Override\r\n    public void setCategories(Dictionary<Integer, Category> dic) {\r\n        _category=dic;\r\n    }\r\n\r\n    @Override\r\n    public Category getCategory(int catID) {\r\n        log.debug(\"got inside getCategory(int catID) Method with: \"+catID);\r\n        return _category.get(catID);\r\n    }\r\n\r\n    @Override\r\n    public Category addCategory(String name, int superCategory) {\r\n        log.debug(\"got inside addCategory(String name, int superCategory) Method with: \" + name + \",\" + superCategory);\r\n        checkValidCategory(superCategory);\r\n        checkValidNameCategory(name);\r\n        Category tmp = _category.get(superCategory);\r\n        dal.setCategoryCounter(dal.categoryCounter()+1);\r\n        int catID =dal.categoryCounter();\r\n        Category output;\r\n        try {\r\n            output = new Category(getID(),catID, name, tmp);\r\n        }\r\n        catch (Exception e){\r\n            dal.setCategoryCounter(dal.categoryCounter()-1);\r\n            throw e;\r\n        }\r\n        _category.put(catID,output);\r\n        try {\r\n            tmp.addCategory(output);\r\n\r\n        } catch (Exception e) {\r\n            dal.setCategoryCounter(dal.categoryCounter()-1);\r\n            _category.remove(catID);\r\n            throw e;\r\n        }\r\n        log.info(String.format(\"new Category '%s' added the Store #%d\",name,getID()));\r\n        return output;\r\n    }\r\n\r\n\r\n    @Override\r\n    public List<Integer> getCategories() {\r\n        log.debug(\"got inside getCategories() Method.\");\r\n        List<Category> list= Collections.list(_category.elements());\r\n         return list.stream().map(Category::get_categoryID).collect(Collectors.toList());\r\n    }\r\n\r\n    @Override\r\n    public void addProductType(String name, int minAmount, double basePrice, double salePrice, String producer, int supID, int category) {\r\n        log.debug(String.format(\"addProductType(String name, int minAmount, float basePrice, float salePrice, String producer, int supID, int category)\" +\r\n                        \" Method  with: %s, %d, %f, %f, %s, %d, %d\",\r\n                name,minAmount,basePrice,salePrice,producer,supID,category));\r\n        checkValidNameProductType(name);\r\n        checkValidCategory(category);\r\n        Category cat=_category.get(category);\r\n        List<Integer> discounts= new ArrayList<>();\r\n        cat.addAllDiscountCategory(discounts);\r\n        dal.setTypeCounter(dal.getTypeCounter()+1);\r\n        int typeID=dal.getTypeCounter();\r\n        ProductType newProductType=new ProductType(getID(),typeID,name,minAmount,basePrice,salePrice,producer,supID,category);\r\n        try {\r\n            _category.get(category).addProductType(typeID);\r\n            for (Integer i: discounts){\r\n                newProductType.addDiscount(saleCategoryDiscount.get(i));\r\n            }\r\n        }\r\n        catch (Exception e){\r\n            dal.setTypeCounter(dal.getTypeCounter()-1);\r\n        }\r\n        _products.put(newProductType,new InstanceController(getID(),typeID));\r\n        log.info(String.format(\"new ProductType %s added the Store #%d\",name,getID()));\r\n    }\r\n\r\n    @Override\r\n    public List<Integer> getProductTypes() {\r\n        log.debug(\"got inside  getProductTypes() Method.\");\r\n        return Collections.list(_products.keys()).stream().map(ProductType::get_typeID).collect(Collectors.toList());\r\n    }\r\n\r\n    @Override\r\n    public ProductType getProductTypeInfo(int id) {\r\n        log.debug(String.format(\"got inside  getProductTypeInfo(int id) Method with:%d\",id));\r\n        return checkIDProductTypeExist(id);\r\n    }\r\n\r\n    @Override\r\n    public int getShelvesAmount(int typeID) {\r\n        log.debug(String.format(\"got inside  getShelvesAmount(int typeID) Method with:%d\",typeID));\r\n        int ret=0;\r\n        for(Shelf s:_shelves){\r\n            if(s.get_typeID()==typeID && s.get_location()==Location.Shelves) {\r\n                ret+=s.get_cur();\r\n                log.info(\"typeID: \"+typeID+\" shelfID: \"+s.get_shelfID()+\" Location: \"+s.get_location()+\", type: \"+ s.get_typeID()+\", cur: \"+ s.get_cur());\r\n            }\r\n        }\r\n        return ret;\r\n    }\r\n\r\n    @Override\r\n    public int shelvesAmountExist() {\r\n        log.debug(\"got inside  shelvesAmountExist() Method.\");\r\n        return (int)_shelves.stream().filter(x -> x.get_location() == Location.Shelves).count();\r\n    }\r\n\r\n    @Override\r\n    public int storageAmountExist() {\r\n        log.debug(\"got inside  storageAmountExist() Method.\");\r\n        return (int)_shelves.stream().filter(x -> x.get_location() == Location.Storage).count();\r\n    }\r\n\r\n    @Override\r\n    public int getStorageAmount(int typeID) {\r\n        int ret=0;\r\n        for(Shelf s:_shelves){\r\n            if(s.get_typeID()==typeID && s.get_location()==Location.Storage) {\r\n                ret+=s.get_cur();\r\n            }\r\n        }\r\n        return ret;\r\n    }\r\n\r\n    @Override\r\n    public List<Integer> getProductByType(int typeID) {\r\n        return  _products.get(checkIDProductTypeExist(typeID)).getProduts();\r\n    }\r\n\r\n    @Override\r\n    public Category addCategory(String name) {\r\n        log.debug(String.format(\"got inside addCategory(String name) Method with: %s\",name));\r\n        checkValidNameCategory(name);\r\n        dal.setCategoryCounter(dal.categoryCounter()+1);\r\n        int catId=dal.categoryCounter();\r\n        log.debug(catId);\r\n        try{\r\n            Category c=new Category(getID(),catId,name);\r\n            _category.put(catId,c);\r\n            return c;\r\n        }\r\n        catch (Exception e)\r\n        {\r\n            dal.setCategoryCounter(dal.categoryCounter()-1);\r\n            throw e;\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void addSaleProductDiscount(int productTypeID, double percent, Date start, Date end) {\r\n        log.debug(String.format(\"got inside addSaleProductDiscount(int productTypeID, float percent, Date start, Date end)\" +\r\n                \" Method with: %d, %f, \"+start+\" , \"+end,productTypeID,percent));\r\n        ProductType p=checkIDProductTypeExist(productTypeID);\r\n        try {\r\n            dal.set_discountCounter(dal.get_discountCounter()+1);\r\n            p.addSaleProductDiscount(dal.get_discountCounter(), percent, start, end);\r\n        }\r\n        catch (Exception e){\r\n            dal.set_discountCounter(dal.get_discountCounter()-1);\r\n            throw e;\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public int counterDiscount() {\r\n        log.debug(String.format(\"got inside counterDiscount() Method.\"));\r\n        return dal.get_discountCounter();\r\n    }\r\n\r\n    @Override\r\n    public void addSaleCategoryDiscount(int catID, double percent, Date start, Date end) {\r\n        log.debug(String.format(\"got inside addSaleCategoryDiscount(int CatID, float percent, Date start, Date end)\" +\r\n                \" Method with: %d, %f, \"+start+ \",\"+end,catID,percent));\r\n        checkValidCategory(catID);\r\n        Category c=_category.get(catID);\r\n        List<Integer> list=c.getAllProductType();\r\n        ProductType tmp;\r\n        SaleDiscount discount=null;\r\n        dal.set_discountCounter(dal.get_discountCounter()+1);\r\n        int count=counterDiscount();\r\n        try {\r\n            discount = new SaleDiscount(getID(),count, percent, start, end);\r\n            c.addDiscount(count);\r\n            for (int i=0; i<list.size(); i++){\r\n                tmp=checkIDProductTypeExist(list.get(i));\r\n                tmp.addDiscount(discount);\r\n            }\r\n            log.info(String.format(\"add new discount #%s to Category #%s\",count,catID));\r\n        }\r\n        catch (Exception e){\r\n            dal.set_discountCounter(dal.get_discountCounter()-1);\r\n            c.removeDiscount(count);\r\n            for (int i=0; i<list.size(); i++){\r\n                tmp=checkIDProductTypeExist(list.get(i));\r\n                tmp.removeDiscount(discount);\r\n            }\r\n            throw e;\r\n        }\r\n        saleCategoryDiscount.put(count,discount);\r\n    }\r\n\r\n\r\n    @Override\r\n    public void addSupplierDiscount(int typeID, double percent, Date start, Date end, int supId) {\r\n        log.debug(String.format(\"got inside addSupplierDiscount(int categoryID, float percent, Date start, Date end, int supId)\" +\r\n                \" Method with: %d, %f,  \"+start+\" , \"+end+\" , %d\",typeID,percent,supId));\r\n        ProductType p=checkIDProductTypeExist(typeID);\r\n        try {\r\n            dal.set_discountCounter(counterDiscount()+1);\r\n            p.addSaleProductDiscount(counterDiscount(), percent, start, end);\r\n        }\r\n        catch (Exception e){\r\n            dal.set_discountCounter(counterDiscount()-1);\r\n            throw e;\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public List<SupplierDiscount> getSupplierDiscounts(int typeID) {\r\n        log.debug(String.format(\"got inside getSupplierDiscounts(int typeID) Method with: %d\",typeID));\r\n        return checkIDProductTypeExist(typeID).getSupplierDiscounts();\r\n    }\r\n\r\n    @Override\r\n    public List<SaleDiscount> getSaleDiscounts(int typeID) {\r\n        log.debug(String.format(\"got inside getSaleDiscounts(int typeID) Method with: %d\",typeID));\r\n        return checkIDProductTypeExist(typeID).getSalePrice();\r\n    }\r\n\r\n    @Override\r\n    public void editCategory(int Id, String name, int superCategory) throws Exception {\r\n        log.debug(String.format(\"got inside editCategory(int Id, String name, int superCategory) Method with: %d, %s, %d\",Id,name,superCategory));\r\n        editCategoryInBL(Id,name,superCategory);\r\n    }\r\n\r\n\r\n    @Override\r\n    public void editCategory(int Id, String name) throws Exception {\r\n        log.debug(String.format(\"got inside editCategory(int Id, String name) Method with: %d, %s\",Id,name));\r\n        editCategoryInBL(Id,name);\r\n    }\r\n\r\n    @Override\r\n    public void editProductType(int id, String name, int minAmount, double basePrice, double salePrice, String producer, int supID, int category) {\r\n        log.debug(String.format(\"editProductType(int id, String name, int minAmount, float basePrice, float salePrice\" +\r\n                \", String producer, int supID, int category) Method with: \"+id+\" \"+name+\" \"+minAmount+\" \"+basePrice+\" \"+producer+\" \"+supID+\" \"+category));\r\n        checkValidCategory(category);\r\n        ProductType pt=checkIDProductTypeExist(id);\r\n        //checks\r\n\r\n        Category lastCat=_category.get(pt.get_categoryID());\r\n        List<Integer> saleIDToDelete=new ArrayList<>();\r\n        lastCat.addAllDiscountCategory(saleIDToDelete);\r\n        List<SaleDiscount> saleDiscountsToDelete=new ArrayList<>();\r\n\r\n        Category newCat=_category.get(category);\r\n        List<Integer> saleIDToAdd=new ArrayList<>();\r\n        newCat.addAllDiscountCategory(saleIDToAdd);\r\n        List<SaleDiscount> saleDiscountsToAdd=new ArrayList<>();\r\n\r\n\r\n        for (Integer sale: saleIDToDelete){\r\n            SaleDiscount s=saleCategoryDiscount.get(sale);\r\n            if (!saleDiscountsToDelete.contains(s))\r\n                saleDiscountsToDelete.add(s);\r\n        }\r\n        for (Integer sale: saleIDToAdd){\r\n            SaleDiscount s=saleCategoryDiscount.get(sale);\r\n            if (!saleDiscountsToAdd.contains(s))\r\n                saleDiscountsToAdd.add(s);\r\n        }\r\n        pt.edit(name,minAmount,basePrice,producer,supID,category,saleDiscountsToDelete,saleDiscountsToAdd);\r\n\r\n    }\r\n\r\n    @Override\r\n    public void addProduct(int typeID, Date expiration) throws Exception {\r\n        log.debug(String.format(\"got inside addProduct(int typeID, Date expiration) Method with: %d, \"+expiration,typeID));\r\n        ProductType tmp=checkIDProductTypeExist(typeID);\r\n        if(tmp.get_shelfCurr()+tmp.get_storageCurr()>=MAX_PRODUCTS_ON_PROTUCTTYPE) throw new Exception(\"type \"+typeID+\" has \"+MAX_PRODUCTS_ON_PROTUCTTYPE+\" products and cant add more\");\r\n\r\n        Shelf s=findPlaceForNewProduct(typeID);\r\n\r\n        log.debug(\"products=\"+tmp.get_products());\r\n        int productID=_products.get(tmp).addProduct(expiration,s.get_location(),s.get_shelfID());\r\n        log.debug(String.format(\"the productID: %d:\",productID));\r\n        try {\r\n            tmp.addProduct(productID,s.get_location());\r\n        }\r\n        catch (Exception e){\r\n            log.warn(e);\r\n            _products.get(tmp).removeProduct(productID);\r\n            throw e;\r\n        }\r\n        s.addProduct();\r\n    }\r\n\r\n    @Override\r\n    public void removeProduct(int ID) {\r\n        log.debug(String.format(\"got inside removeProduct(int ID) Method with: %d\",ID));\r\n        int typeID=ID/MAX_PRODUCTS_ON_PROTUCTTYPE;\r\n        int productID=ID;\r\n        ProductType tmp=checkIDProductTypeExist(typeID);\r\n        Product p=_products.get(tmp).removeProduct(productID);\r\n        try {\r\n            tmp.removeProduct(productID,p.get_location());\r\n        }\r\n        catch (Exception e)\r\n        {\r\n            log.warn(e);\r\n            _products.get(tmp).addProduct(p);\r\n        }\r\n        _shelves.get(p.getShelf()).removeProduct();\r\n    }\r\n\r\n    @Override\r\n    public void reportDamage(int ID) {\r\n        log.debug(String.format(\"got inside reportDamage(int ID) Method with: %d\",ID));\r\n        ProductType pt=checkIDProductTypeExist(ID/MAX_PRODUCTS_ON_PROTUCTTYPE);\r\n        InstanceController ic=_products.get(pt);\r\n        Product p=ic.reportDamage(ID);\r\n        pt.reportDamage(p);\r\n    }\r\n\r\n    @Override\r\n    public Product getProductInfo(int ID) {\r\n        log.debug(String.format(\"got inside getProductInfo(int ID) Method with: %d\",ID));\r\n        return _products.get(checkIDProductTypeExist(ID/MAX_PRODUCTS_ON_PROTUCTTYPE)).getProduct(ID);\r\n    }\r\n\r\n    @Override\r\n    public void relocateProduct(int ID, boolean toStorage, int targetShelf) {\r\n        log.debug(String.format(\"got inside relocateProduct(int ID, boolean toStorage, int targetShelf) Method with: %d,%s,%d\",ID,toStorage,targetShelf));\r\n        String s;\r\n        Shelf shelf=_shelves.get(targetShelf);\r\n        if (shelf==null)\r\n        {\r\n            s=String.format(\"the targetShelf is illegal\");\r\n            log.warn(s);\r\n            throw  new IllegalArgumentException(s);\r\n        }\r\n        Product p=getProductInfo(ID);\r\n        if ((toStorage & targetShelf<=dal.get_storeShelves()) ||(!toStorage & targetShelf>dal.get_storeShelves())){\r\n            s=String.format(\"the target does not in storage/store\");\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n        if (shelf.get_typeID()==0){\r\n            shelf.set_typeID(ID/MAX_PRODUCTS_ON_PROTUCTTYPE);\r\n        }\r\n        shelf.addProduct();\r\n        _shelves.get(p.getShelf()-1).removeProduct();\r\n        checkIDProductTypeExist(ID/MAX_PRODUCTS_ON_PROTUCTTYPE).relocateProduct(toStorage);\r\n        p.set_location(new Tuple<>(targetShelf,toStorage?Location.Storage:Location.Shelves));\r\n    }\r\n\r\n    @Override\r\n    public void setShelves(List<Shelf> list) {//for testing\r\n        _shelves=list;\r\n    }\r\n\r\n    private void checkValidCategory(int catID){\r\n        log.debug(\"got inside checkValidCategory(int catID) Method with: \"+catID);\r\n        String s;\r\n        if (catID<0) {\r\n            s=String.format(\"the value: %d is not valid. (<0)\",catID);\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n        if (_category.get(catID)==null) {\r\n            s=String.format(\"the value: %d is not exist in the system.\",catID);\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n    }\r\n    private void checkValidNameCategory(String name){\r\n        log.debug(\"got inside checkValidNameCategory(String name) Method with:\"+name);\r\n        String s;\r\n        if (name==null || name.equals(\"\")) {\r\n            s=\"the name of the category is empty.\";\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n        for (Enumeration<Category> c = _category.elements(); c.hasMoreElements();){\r\n            if (c.nextElement().get_name().equals(name)){\r\n                s=String.format(\"the name %s is exist in other category.\",name);\r\n                log.warn(s);\r\n                throw new IllegalArgumentException(s);\r\n            }\r\n        }\r\n    }\r\n    private void checkValidNameProductType(String name){\r\n        log.debug(\"got inside checkValidNameProductType(String name) Method with:\"+name);\r\n        String s;\r\n        if (name==null || name.equals(\"\")) {\r\n            s=\"the name of the ProductType is empty.\";\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n        for (Enumeration<ProductType> c = _products.keys(); c.hasMoreElements();) {\r\n            if (c.nextElement().get_name().equals(name)){\r\n                s=String.format(\"the name %s is exist in other ProductType.\",name);\r\n                log.warn(s);\r\n                throw new IllegalArgumentException(s);\r\n            }\r\n        }\r\n    }\r\n    private ProductType checkIDProductTypeExist(int check){\r\n        log.debug(\"got inside checkIDProductTypeExist(int check) Method with:\"+check);\r\n        String s;\r\n        if (check<0) {\r\n            s=\"the value of ProductType is illegal <0\";\r\n            log.warn(s);\r\n            throw new IllegalArgumentException(s);\r\n        }\r\n        for (Enumeration<ProductType> pt= _products.keys(); pt.hasMoreElements();) {\r\n            ProductType tmp=pt.nextElement();\r\n            if (tmp.get_typeID() == check)\r\n                return tmp;\r\n        }\r\n        s=String.format(\"the number #%s, is not ID of any ProductType in Store #%s\",check,getID());\r\n        log.warn(s);\r\n        throw new IllegalArgumentException(s);\r\n    }\r\n    private void editCategoryInBL(int Id, String name, Integer... superCategory) throws Exception {\r\n        checkValidCategory(Id);\r\n        if ((Arrays.stream(superCategory).count() == 1)) {\r\n            if(Id==superCategory[0]) throw new Exception(\"category cannot be its own child\");\r\n            checkValidCategory(superCategory[0]);\r\n        }\r\n\r\n        for (Enumeration<Category> c=_category.elements(); c.hasMoreElements();)\r\n        {\r\n            Category tmp=c.nextElement();\r\n            if (tmp.get_categoryID()!=Id & tmp.get_name().equals(name))\r\n            {\r\n                String s=String.format(\"the name: %s , is exist in the system \",name);\r\n                log.warn(s);\r\n                throw new IllegalArgumentException(s);\r\n            }\r\n        }\r\n        //until here is only checks\r\n\r\n\r\n        Category c=_category.get(Id);\r\n        if (c.get_superCategory()!=null) {\r\n            c.get_superCategory().removeCategory(c);\r\n            c.fixDiscount();\r\n        }\r\n        if ((Arrays.stream(superCategory).count() == 1)) {\r\n            c.edit(name, _category.get(superCategory[0]));\r\n            c.get_superCategory().addCategory(c);\r\n        }\r\n        else\r\n            _category.get(Id).edit(name);\r\n        log.info(String.format(\"the Category #%d, edit his details\",Id));\r\n    }\r\n\r\n\r\n\r\n    private Shelf findPlaceForNewProduct(int typeID) {\r\n        for (int i=0 ;i<dal.get_numberOfShelves(); i++)\r\n        {\r\n            Shelf s=_shelves.get(i);\r\n            if (s.get_typeID()==typeID && !s.isFull()) {\r\n                s.set_typeID(typeID);\r\n                return s;\r\n            }\r\n        }\r\n        log.info(String.format(\"the product with productType #%d need new shelf.\",typeID));\r\n        for (int i=0 ;i<dal.get_numberOfShelves(); i++)\r\n        {\r\n            Shelf s=_shelves.get(i);\r\n            if (s.get_typeID()==0 && !s.isFull()) {\r\n                s.set_typeID(typeID);\r\n                return s;\r\n            }\r\n        }\r\n        String s=String.format(\"does not have a place to newProduct of type #%d\",typeID);\r\n        log.warn(s);\r\n        throw new IllegalArgumentException(s);\r\n    }\r\n\r\n\r\n    public void logTypeProductList(int tid){\r\n        Enumeration<ProductType> e=_products.keys();\r\n        while(e.hasMoreElements()) {\r\n            ProductType pt=e.nextElement();\r\n            if (pt.get_typeID()==tid) log.debug(\"products for: \"+tid+\" \"+pt.get_products());\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/BusinessLayer/StockBusiness/StoreController.java	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ src/BusinessLayer/StockBusiness/StoreController.java	(date 1620643569363)
+@@ -523,13 +523,13 @@
+         log.debug(String.format("the productID: %d:",productID));
+         try {
+             tmp.addProduct(productID,s.get_location());
++            s.addProduct();
+         }
+         catch (Exception e){
+             log.warn(e);
+             _products.get(tmp).removeProduct(productID);
+             throw e;
+         }
+-        s.addProduct();
+     }
+ 
+     @Override
+Index: src/main.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import BusinessLayer.StockBusiness.Fcade.StorageService;\r\nimport BusinessLayer.StockBusiness.Fcade.outObjects.ProductType;\r\nimport BusinessLayer.StockBusiness.StoreController;\r\nimport DAL.DalController;\r\nimport DAL.DalStock.DALStoreController;\r\nimport DAL.Mapper;\r\nimport Presentation.mainCLI;\r\nimport Utility.Tuple;\r\nimport org.apache.log4j.Logger;\r\n\r\nimport java.text.ParseException;\r\nimport java.text.SimpleDateFormat;\r\nimport java.util.ArrayList;\r\nimport java.util.Collections;\r\nimport java.util.Date;\r\nimport java.util.List;\r\n\r\npublic class main {\r\n    final static Logger log=Logger.getLogger(main.class);\r\n    public static void main(String[] args) {\r\n        Mapper.getMap(\"test.db\");\r\n         mainCLI CLI = new mainCLI();\r\n         CLI.start(true);\r\n\r\n//       Mapper map = Mapper.getMap(\"test.db\");\r\n//        List<Tuple<Object,Class>> b =new ArrayList<>();\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//        b.add(new Tuple<>(1,Integer.class));\r\n//\r\n//        map.setItem(DALStoreController.class,b);\r\n//        List<Integer> a=new ArrayList<>();\r\n//        a.add(1);\r\n//        DALStoreController sc=(DALStoreController) map.getItem(DALStoreController.class,a );\r\n//        map.deleteItem(DALStoreController.class,a);\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/main.java	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ src/main.java	(date 1620643087793)
+@@ -1,5 +1,8 @@
++import BusinessLayer.StockBusiness.Fcade.ResponseData;
+ import BusinessLayer.StockBusiness.Fcade.StorageService;
+-import BusinessLayer.StockBusiness.Fcade.outObjects.ProductType;
++import BusinessLayer.StockBusiness.Fcade.iStorageService;
++import BusinessLayer.StockBusiness.Fcade.outObjects.Categories;
++import BusinessLayer.StockBusiness.Fcade.outObjects.Category;
+ import BusinessLayer.StockBusiness.StoreController;
+ import DAL.DalController;
+ import DAL.DalStock.DALStoreController;
+@@ -7,20 +10,47 @@
+ import Presentation.mainCLI;
+ import Utility.Tuple;
+ import org.apache.log4j.Logger;
++import BusinessLayer.StockBusiness.Fcade.Response;
++
+ 
+ import java.text.ParseException;
+ import java.text.SimpleDateFormat;
+-import java.util.ArrayList;
+-import java.util.Collections;
+-import java.util.Date;
+-import java.util.List;
++import java.util.*;
+ 
+ public class main {
+     final static Logger log=Logger.getLogger(main.class);
+     public static void main(String[] args) {
+         Mapper.getMap("test.db");
+          mainCLI CLI = new mainCLI();
+-         CLI.start(true);
++        StorageService sc = new StorageService();
++        Response response;
++        response = sc.addStore();
++        sc.useStore(1);
++        if(response.isError) System.out.println("1) error: " + response.getError());
++        response = sc.addCategory("dairy");
++        if(response.isError) System.out.println("2) error: " + response.getError());
++        response = sc.addCategory("meat");
++        if(response.isError) System.out.println("3) error: " + response.getError());
++        response =sc.addCategory("milk" , 1);
++        if(response.isError) System.out.println("4) error: " + response.getError());
++        response = sc.addProductType("milk" , 2 , 2.99 , 5.99  , "tara" ,  1 , 1);
++        if(response.isError) System.out.println("5) error: " + response.getError());
++        response = sc.editProductType(1 , "dairy" , 8 , 41.22 , 88.99, "tara" ,  1, 1);
++        if(response.isError) System.out.println("12) error: " + response.getError());
++        response = sc.getProductsByType(1);
++        if(response.isError) System.out.println("13) error: " + response.getError());
++        response = sc.getShelvesAmount(1);
++        if(response.isError) System.out.println("14) error: " + response.getError());
++        response = sc.getStorageAmount(1);
++        if(response.isError) System.out.println("15) error: " + response.getError());
++        response = sc.getWeeklyReport();
++        if(response.isError) System.out.println("16) error: " + response.getError());
++        response = sc.getWeeklyReport(new LinkedList<>());
++        if(response.isError) System.out.println("17) error: " + response.getError());
++        response = sc.getNeededReport();
++        if(response.isError) System.out.println("18) error: " + response.getError());
++        response = sc.getWasteReport();
++        if(response.isError) System.out.println("19) error: " + response.getError());
+ 
+ //       Mapper map = Mapper.getMap("test.db");
+ //        List<Tuple<Object,Class>> b =new ArrayList<>();
+Index: src/BusinessLayer/StockBusiness/Fcade/StorageService.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package BusinessLayer.StockBusiness.Fcade;\r\n\r\nimport BusinessLayer.StockBusiness.Fcade.outObjects.*;\r\nimport BusinessLayer.StockBusiness.StoreController;\r\nimport BusinessLayer.StockBusiness.iStoreController;\r\nimport BusinessLayer.StockBusiness.instance.Location;\r\nimport org.apache.log4j.Logger;\r\n\r\nimport java.text.ParseException;\r\nimport java.text.SimpleDateFormat;\r\nimport java.util.ArrayList;\r\nimport java.util.Date;\r\nimport java.util.LinkedList;\r\nimport java.util.List;\r\n\r\npublic class StorageService implements iStorageService {\r\n    int counter=1;\r\n    int shelves=1000;\r\n    int storeShelves=500;\r\n    int MAX_PER_SHELF=100;\r\n    List<StoreController> stores;\r\n    StoreController curr;\r\n    final static Logger log= Logger.getLogger(StorageService.class);\r\n\r\n    public StorageService() {\r\n        stores=new ArrayList<>();\r\n        curr=null;\r\n    }\r\n\r\n    public int getCurrID(){\r\n        return curr.getID();\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Report> getWeeklyReport() {\r\n        try {\r\n            reports.Report rep=curr.getWeeklyReport();\r\n            Report ret=new Report(rep.getStore(),rep.getDate(),rep.toString(),rep.getType());\r\n            return new ResponseData<>(ret);\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Report> getWeeklyReport(List<Integer> c) {\r\n        try {\r\n            reports.Report rep=curr.getWeeklyReport(c);\r\n            Report ret=new Report(rep.getStore(),rep.getDate(),rep.toString(),rep.getType());\r\n            return new ResponseData<>(ret);\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Report> getNeededReport() {\r\n        try {\r\n            reports.Report rep=curr.getNeededReport();\r\n            Report ret=new Report(rep.getStore(),rep.getDate(),rep.toString(),rep.getType());\r\n            return new ResponseData<>(ret);\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Report> getWasteReport() {\r\n        try {\r\n            reports.Report rep=curr.getWasteReport();\r\n            Report ret=new Report(rep.getStore(),rep.getDate(),rep.toString(),rep.getType());\r\n            return new ResponseData<>(ret);\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addCategory(String name) {\r\n        try {\r\n            curr.addCategory(name);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addCategory(String name, int superCategory) {\r\n        try {\r\n            curr.addCategory(name,superCategory);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Categories> getCategories() {\r\n        try {\r\n            return new ResponseData<>(new Categories(curr.getCategories()));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Category> getCategoryInfo(int id) {\r\n        try {\r\n            BusinessLayer.StockBusiness.Type.Category ret=curr.getCategory(id);\r\n            List<Integer> cids=new ArrayList<>();\r\n            for(BusinessLayer.StockBusiness.Type.Category c:ret.get_categories()){\r\n                cids.add(c.get_categoryID());\r\n            }\r\n            return new ResponseData<>(new Category(ret.get_categoryID(),ret.get_superCategory()==null?0:ret.get_superCategory().get_categoryID(),ret.get_name(),cids,ret.get_productTypes()));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response editCategory(int Id, String name, int superCategory) {\r\n        try {\r\n            curr.editCategory(Id,name,superCategory);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response editCategory(int Id, String name) {\r\n        try {\r\n            curr.editCategory(Id,name);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addProductType(String name, int minAmount, double basePrice, double salePrice,String producer, int supID, int category) {\r\n        try {\r\n            curr.addProductType(name,minAmount,basePrice,salePrice,producer,supID,category);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<AllType> getProductTypes() {\r\n        try {\r\n            return new ResponseData<>(new AllType(curr.getProductTypes()));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<ProductType> getProductTypeInfo(int id) {\r\n        try {\r\n            BusinessLayer.StockBusiness.Type.ProductType ret=curr.getProductTypeInfo(id);\r\n            return new ResponseData<>(new ProductType(ret.get_typeID(),ret.get_minAmount(),ret.get_categoryID(),ret.get_producer(),\r\n                    ret.get_suppliers(),ret.get_shelfCurr(),ret.get_storageCurr(),ret.get_basePrice(),ret.get_salePrice()));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response editProductType(int ID,String name, int minAmount, double basePrice,double salePrice, String producer, int supID, int category) {\r\n        try {\r\n            curr.editProductType(ID,name,minAmount,basePrice,salePrice,producer,supID,category);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            log.warn(e);\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addSaleProductDiscount(int productTypeID, float percent, Date start, Date end) {\r\n        try {\r\n            curr.addSaleProductDiscount(productTypeID,percent,start,end);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addSaleCategoryDiscount(int catID, float percent, Date start, Date end) {\r\n        try {\r\n            curr.addSaleCategoryDiscount(catID,percent,start,end);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addSupplierDiscount(int typeID, float percent, Date start, Date end, int supId) {\r\n        try {\r\n            curr.addSupplierDiscount(typeID,percent,start,end,supId);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<List<Integer>> getProductsByType(int typeID) {\r\n        try {\r\n            return new ResponseData<>(curr.getProductByType(typeID));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response addProduct(int typeID, Date expiration) {\r\n        try {\r\n            curr.addProduct(typeID,expiration);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response removeProduct(int ID) {\r\n        try {\r\n            curr.removeProduct(ID);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response reportDamage(int ID) {\r\n        try {\r\n            curr.reportDamage(ID);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Product> getProductInfo(int ID) {\r\n        try {\r\n            BusinessLayer.StockBusiness.Type.ProductType Tret=curr.getProductTypeInfo(ID/curr.MAX_PRODUCTS_ON_PROTUCTTYPE);\r\n            BusinessLayer.StockBusiness.instance.Product Pret=curr.getProductInfo(ID);\r\n            return new ResponseData<>(new Product(Pret.get_id(),Tret.get_typeID(),Pret.get_expiration(),\r\n                    Pret.get_location().item2==Location.Storage,Pret.get_location().item1));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Integer> getShelvesAmount(int typeID) {\r\n        try {\r\n            return new ResponseData<>(curr.getShelvesAmount(typeID));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Integer> getStorageAmount(int typeID) {\r\n        try {\r\n            return new ResponseData<>(curr.getStorageAmount(typeID));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<SupplierDiscounts> getSupplierDiscounts(int typeID) {\r\n        try {\r\n            List<BusinessLayer.StockBusiness.Type.SupplierDiscount> get=curr.getSupplierDiscounts(typeID);\r\n            List<SupplierDiscount> ret=new ArrayList<>();\r\n            for (BusinessLayer.StockBusiness.Type.SupplierDiscount d:get){\r\n                ret.add(new SupplierDiscount(d.get_discountID(),d.get_start(),d.get_end(),d.get_percent(),d.get_supplierID()));\r\n            }\r\n            return new ResponseData<>(new SupplierDiscounts(typeID,ret));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<SaleDiscounts> getSaleDiscounts(int typeID) {\r\n        try {\r\n            List<BusinessLayer.StockBusiness.Type.SaleDiscount> get=curr.getSaleDiscounts(typeID);\r\n            List<SaleDiscount> ret=new ArrayList<>();\r\n            for (BusinessLayer.StockBusiness.Type.SaleDiscount d:get){\r\n                ret.add(new SaleDiscount(d.get_discountID(),d.get_start(),d.get_end(),d.get_percent()));\r\n            }\r\n            return new ResponseData<>(new SaleDiscounts(typeID,ret));\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response relocateProduct(int ID, boolean toStorage, int targetShelf) {\r\n        try {\r\n            curr.relocateProduct(ID,toStorage,targetShelf);\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new Response(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<Integer> addStore() {\r\n        try {\r\n            stores.add(new StoreController(counter,shelves,storeShelves,MAX_PER_SHELF));\r\n            counter++;\r\n            return new ResponseData<>(counter-1);\r\n        }\r\n        catch (Exception e) {\r\n            log.warn(e);\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n\r\n    }\r\n\r\n    @Override\r\n    public ResponseData<List<Integer>> getStores() {\r\n        try {\r\n            List<Integer> ret=new LinkedList<>();\r\n            for (StoreController s:stores) {\r\n                ret.add(s.getID());\r\n            }\r\n\r\n            if(ret.size()==0) throw new Exception(\"no stores registered\");\r\n            return new ResponseData<>(ret);\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public Response useStore(int ID) {\r\n        try {\r\n            StoreController old=curr;\r\n            for(StoreController s:stores){\r\n                if(s.getID()==ID) {\r\n                    curr = s;\r\n                    break;\r\n                }\r\n            }\r\n            if(curr==old) throw new Exception(\"Store not found.\");\r\n            return new Response();\r\n        }\r\n        catch (Exception e) {\r\n            return new ResponseData<>(e.toString());\r\n        }\r\n    }\r\n    public static void init(StorageService ss) throws ParseException {\r\n        ss.addStore();\r\n        ss.useStore(1);\r\n        for (int i = 1; i < 11; i++) ss.addCategory(\"root\" + i);\r\n        for (int i = 1; i < 21; i++) {\r\n            ss.addCategory(\"ch\" + i, i);\r\n\r\n        }\r\n        for (int i = 1; i < 15; i++) {\r\n            for (int j = 1; j < 10; j++) {\r\n                ss.addProductType(\"p\" + i + \"\" + j, 8, i * j / 2, i * j * j / 4, \"P\" + i + \"\" + j, i, i);\r\n            }\r\n        }\r\n        for (int i = 0; i < ss.getProductTypes().data.size(); i++) {\r\n            for (int j = 0; j < i * 3; j++) {\r\n                ss.addProduct(i, new Date(System.currentTimeMillis()+1000000000)); // expire in approx 20 days\r\n            }\r\n        }\r\n        ss.addSaleCategoryDiscount(1, 12, new SimpleDateFormat(\"dd-MM-yyyy\").parse(\"01-01-2000\"), new SimpleDateFormat(\"dd-MM-yyyy\").parse(\"01-01-2050\"));\r\n    }\r\n\r\n    public void loadAllStores() {\r\n        int i=1;\r\n        while(true){\r\n            try{\r\n                stores.add(new StoreController(i));\r\n                i++;\r\n            }catch (Exception e){\r\n                log.warn(e);\r\n                break;\r\n            }\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/BusinessLayer/StockBusiness/Fcade/StorageService.java	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ src/BusinessLayer/StockBusiness/Fcade/StorageService.java	(date 1620639099322)
+@@ -15,9 +15,9 @@
+ 
+ public class StorageService implements iStorageService {
+     int counter=1;
+-    int shelves=1000;
+-    int storeShelves=500;
+-    int MAX_PER_SHELF=100;
++    int shelves=10;
++    int storeShelves=5;
++    int MAX_PER_SHELF=20;
+     List<StoreController> stores;
+     StoreController curr;
+     final static Logger log= Logger.getLogger(StorageService.class);
+Index: src/DAL/DalStock/DALShelf.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package DAL.DalStock;\r\n\r\nimport BusinessLayer.StockBusiness.instance.Location;\r\nimport DAL.DALObject;\r\nimport DAL.DalController;\r\nimport Utility.Tuple;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class DALShelf extends DALObject {\r\n    private int _shelfID;\r\n    private int _cur;\r\n    private int _typeID=0;\r\n    private int _maxAmount;\r\n    private int isStorage;\r\n    int storeId;\r\n    String tableName=\"Shelf\";\r\n\r\n    public DALShelf(){\r\n        super(null);\r\n    }\r\n\r\n    public DALShelf(Integer storeID,Integer id, Integer typeID, Integer isStorage, Integer curr, Integer max, DalController dc){\r\n        super(dc);\r\n        this.storeId=storeID;\r\n        _typeID=typeID;\r\n        this.isStorage=isStorage;\r\n        _cur=curr;\r\n        _maxAmount=max;\r\n        _shelfID=id;\r\n    }\r\n\r\n    public String getCreate() {\r\n        return \"CREATE TABLE IF NOT EXISTS Shelf (\\n\" +\r\n                \"\\tstoreID INTEGER NOT NULL,\\n\" +\r\n                \"\\tshelfID INTEGER NOT NULL,\\n\" +\r\n                \"\\tlocation INTEGER NOT NULL,\\n\" +\r\n                \"\\ttypeID INTEGER,\\n\" +\r\n                \"\\tcurr INTEGER NOT NULL,\\n\" +\r\n                \"\\tmaximum INTEGER NOT NULL,\\n\" +\r\n                \"\\tPRIMARY KEY (storeID,shelfID, location),\\n\" +\r\n                \"\\tUNIQUE (storeID,shelfID, location),\\n\" +\r\n                \"\\tFOREIGN KEY (typeID) REFERENCES ProductType(typeID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE,\\n\" +\r\n                \"\\tFOREIGN KEY (storeID) REFERENCES StoreController(storeID)\\n\" +\r\n                \"\\tON DELETE CASCADE ON UPDATE CASCADE\\n\" +\r\n                \");\";\r\n    }\r\n\r\n    public String getSelect() {\r\n        return \"\"\"\r\n                SELECT * \\s\r\n                FROM Shelf \\s\r\n                WHERE storeID=? AND shelfID=?;\"\"\";\r\n    }\r\n\r\n    public String getDelete() {\r\n        return \"\"\"\r\n                DELETE FROM Shelf \\s\r\n                WHERE storeID=? AND shelfID=?;\\s\r\n                \"\"\";\r\n    }\r\n\r\n    public String getUpdate() {\r\n        return null;\r\n    }\r\n\r\n    public String getInsert() {\r\n        return \"\"\"\r\n                INSERT INTO Shelf \\s\r\n                VALUES (?,?,?,?,?,?);\"\"\";\r\n    }\r\n    public int getID(){return _shelfID;}\r\n    public int getCur(){return _cur;}\r\n    public int getMax(){\r\n        return _maxAmount;\r\n    }\r\n    public void setCur(int cur){\r\n        String query= \"\"\"\r\n                UPDATE Shelf \\s\r\n                SET curr=?\r\n                WHERE storeID=? AND shelfID=?;\r\n                \"\"\";\r\n        List<Tuple<Object,Class>> params=prepareList(tableName,cur,storeId,_shelfID);\r\n        try {\r\n            DC.noSelect(query,params);\r\n        }\r\n        catch (Exception e){\r\n            throw new IllegalArgumentException(\"fail\");\r\n        }\r\n        _cur=cur;\r\n    }\r\n    public int get_typeID(){return _typeID;}\r\n    public void setTypeID(int t){}\r\n\r\n    protected List<Tuple<Object,Class>> prepareList(Object... o){\r\n        List<Tuple<Object,Class>> params=new ArrayList<>();\r\n        for (Object o1:o){\r\n            params.add(new Tuple<>(o1,o1.getClass()));\r\n        }\r\n        return params;\r\n    }\r\n    public boolean isStorage(){\r\n        return isStorage==1;\r\n    }\r\n    public Location getLocation(){\r\n        if (isStorage())\r\n            return Location.Storage;\r\n        else\r\n            return Location.Shelves;\r\n    }\r\n\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/DAL/DalStock/DALShelf.java	(revision 3c0cb76b45c4290ca58ba1dec3740d11c3d0d4de)
++++ src/DAL/DalStock/DALShelf.java	(date 1620643728047)
+@@ -85,11 +85,11 @@
+         List<Tuple<Object,Class>> params=prepareList(tableName,cur,storeId,_shelfID);
+         try {
+             DC.noSelect(query,params);
++            _cur=cur;
+         }
+         catch (Exception e){
+             throw new IllegalArgumentException("fail");
+         }
+-        _cur=cur;
+     }
+     public int get_typeID(){return _typeID;}
+     public void setTypeID(int t){}
